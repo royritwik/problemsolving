@@ -1,55 +1,32 @@
 import streamlit as st
 import pandas as pd
-import sqlite3
 
-# Create a connection to the SQLite database
-conn = sqlite3.connect('survey.db')
-
-# Create the survey table if it doesn't exist
-create_table_query = '''
-    CREATE TABLE IF NOT EXISTS survey (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        question TEXT,
-        response TEXT
-    )
-'''
-conn.execute(create_table_query)
-
-# Load the questions from the database
-def load_questions():
-    query = "SELECT question FROM survey"
-    cursor = conn.cursor()
-    cursor.execute(query)
-    questions = [row[0] for row in cursor.fetchall()]
-    return questions
-
-# Main function
 def main():
     # Set up the app layout
-    st.title('Survey Form')
+    st.title('Google Sheets-like Web Page')
 
-    # Load the questions
-    questions = load_questions()
+    # Create an empty dataframe to store the data
+    data = pd.DataFrame()
 
-    # Display the form
-    with st.form(key='survey_form'):
-        for idx, question in enumerate(questions):
-            st.subheader(f'Question {idx+1}:')
-            st.write(question)
-            response = st.text_input(f'Response to Question {idx+1}')
-            st.write('---')
+    # Add a button to add a new row
+    if st.button('Add Row'):
+        data = add_row(data)
 
-        submitted = st.form_submit_button(label='Submit')
+    # Display the data table
+    if not data.empty:
+        st.dataframe(data)
 
-        if submitted:
-            # Store the responses in the database
-            with conn:
-                for idx, question in enumerate(questions):
-                    response = st.session_state[f'response to question {idx+1}']
-                    conn.execute("INSERT INTO survey (question, response) VALUES (?, ?)", (question, response))
+def add_row(data):
+    # Get user input for each column
+    name = st.text_input('Name')
+    age = st.number_input('Age')
+    email = st.text_input('Email')
 
-            # Display a success message
-            st.success('Survey submitted successfully!')
+    # Add the row to the dataframe
+    new_row = pd.DataFrame([[name, age, email]], columns=['Name', 'Age', 'Email'])
+    data = data.append(new_row, ignore_index=True)
+
+    return data
 
 if __name__ == '__main__':
     main()
